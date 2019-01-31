@@ -1,1 +1,104 @@
+import os, time, csv
+from bs4 import BeautifulSoup
+import re
+
+with open('ncPolicies_TEST.csv', 'w', newline='') as fp:
+    a = csv.writer(fp, delimiter=',')
+    a.writerows([["EmployeName", "EmployerAddr1", "EmployerAddr1", "CarrierName", "CarrierAddr_1",
+                  "CarrierAddr_2", "PolicyNumber", "EffectiveDate", "ExpiryDate", "CancelDate", "ReinstateDate"]])
+
+    html = ''
+    with open('nc_inner_a.txt') as f:
+        html = str( f.readlines() )
+
+    soup = BeautifulSoup(html, 'html.parser')
+
+    tableToParse = soup.find("table", {"id": "documents"})
+
+    #All_TR_TAGS = soup.findAll("tr")
+    All_TR_ODD_TAGS = soup.find_all('tr', {'class': re.compile('odd.*')})
+    All_TR_EVEN_TAGS = soup.find_all('tr', {'class': re.compile('even.*')})
+    ALL_TAGS = All_TR_ODD_TAGS + All_TR_EVEN_TAGS
+
+    index = 0
+    while index < len(All_TR_ODD_TAGS):
+        row = All_TR_ODD_TAGS[index]
+        try:
+            if row.attrs['class'][0] == 'odd' or row.attrs['class'][0] == 'even':
+                rowsWithData = row.findAll('tr')
+
+                employerNameColumn = rowsWithData[0]
+                carrierNameColumn = rowsWithData[1]
+                policyNumberColumn = rowsWithData[2]
+
+                #Employer Column Data
+                empName = employerNameColumn.findAll('td')[0].text
+                empName = empName[0: empName.find('\\n')]
+                empAddr_1 = employerNameColumn.findAll('p')[0].text
+                positionOfNewLine = empAddr_1.find('\\n')
+                # if positionOfNewLine != -1:
+                #     empAddr_1 = empAddr_1[0: positionOfNewLine]
+                empAddr_2 = employerNameColumn.findAll('p')[1].text
+                # empAddr_2 = empAddr_2[0: empAddr_2.find('\\n')]
+
+                #Carrier Data
+                carrierName = carrierNameColumn.findAll('td')[0].text
+                carrierName = carrierName[0: carrierName.find('\\n')]
+                carrierAddr_1 = carrierNameColumn.findAll('p')[0].text
+                carrierAddr_2 = carrierNameColumn.findAll('p')[1].text
+
+                # Policy Data
+                policyNumber = policyNumberColumn.findAll('td')[0].text
+                policyNumber = policyNumber[0: policyNumber.find('\\n')]
+                listOfPolicyParagraphs = policyNumberColumn.findAll('p')
+                effectiveDate = listOfPolicyParagraphs[0].text
+                expiryDate = listOfPolicyParagraphs[1].text
+                cancelDate = listOfPolicyParagraphs[2].text
+                reinstateDate = listOfPolicyParagraphs[3].text
+
+                effectiveDate = effectiveDate.replace('\\t', '').replace('\\n', '').replace("', '", '').strip().rstrip()
+                try:
+                    effectiveDate = effectiveDate.replace('Effective:', '')
+                except:
+                    effectiveDate = ''
+
+                expiryDate = expiryDate.replace('\\t', '').replace('\\n', '').replace("', '", '').strip().rstrip()
+                try:
+                    expiryDate = expiryDate.replace('Expiry:', '')
+                except:
+                    expiryDate = ''
+
+                cancelDate = cancelDate.replace('\\t', '').replace('\\n', '').replace("', '", '').strip().rstrip()
+                try:
+                    cancelDate = cancelDate.replace('Cancel:', '')
+                except:
+                    cancelDate = ''
+
+                reinstateDate = reinstateDate.replace('\\t', '').replace('\\n', '').replace("', '", '').strip().rstrip()
+                try:
+                    reinstateDate = reinstateDate.replace('Reinstate:', '')
+                except:
+                    reinstateDate = ''
+
+                a.writerows([[empName.replace('\\t', '').replace('\\n','').replace("'', '",'').strip().rstrip(),
+                              empAddr_1.replace('\\t', '').replace('\\n','').replace("', '",'').strip().rstrip(),
+                              empAddr_2.replace('\\t', '').replace('\\n','').replace("', '",'').strip().rstrip(),
+                              carrierName.replace('\\t', '').replace('\\n','').replace("', '",'').strip().rstrip(),
+                              carrierAddr_1.replace('\\t', '').replace('\\n','').replace("', '",'').strip().rstrip(),
+                              carrierAddr_2.replace('\\t', '').replace('\\n','').replace("', '",'').strip().rstrip(),
+                              policyNumber.replace('\\t', '').replace('\\n','').replace("', '",'').strip().rstrip(),
+                              effectiveDate,
+                              expiryDate,
+                              cancelDate,
+                              reinstateDate]])
+                print('Debugging')
+
+                print(empName)
+                print(empAddr_1)
+                print(empAddr_2)
+
+        except:
+            pass
+
+        index += 1
 
